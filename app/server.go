@@ -160,7 +160,7 @@ type Server struct {
 
 	tracer *tracing.Tracer
 
-	products map[string]Product
+	Products map[string]Product
 }
 
 func (s *Server) Store() store.Store {
@@ -185,7 +185,7 @@ func NewServer(options ...Option) (*Server, error) {
 		RootRouter:  rootRouter,
 		LocalRouter: localRouter,
 		timezones:   timezones.New(),
-		products:    make(map[string]Product),
+		Products:    make(map[string]Product),
 	}
 
 	for _, option := range options {
@@ -566,7 +566,7 @@ func (s *Server) AppOptions() []AppOption {
 }
 
 func (s *Server) Channels() *Channels {
-	ch, _ := s.products["channels"].(*Channels)
+	ch, _ := s.Products["channels"].(*Channels)
 	return ch
 }
 
@@ -740,7 +740,7 @@ func (s *Server) Shutdown() {
 	// Stop products.
 	// This needs to happen last because products are dependent
 	// on parent services.
-	for name, product := range s.products {
+	for name, product := range s.Products {
 		if err2 := product.Stop(); err2 != nil {
 			s.Log().Warn("Unable to cleanly stop product", mlog.String("name", name), mlog.Err(err2))
 		}
@@ -840,21 +840,27 @@ func stripPort(hostport string) string {
 	return net.JoinHostPort(host, "443")
 }
 
-func (s *Server) Start() error {
-	// Start products.
-	// This needs to happen before because products are dependent on the HTTP server.
-
+func (s *Server) StartProducts() error {
 	// make sure channels starts first
-	if err := s.products["channels"].Start(); err != nil {
+	if err := s.Products["channels"].Start(); err != nil {
 		return errors.Wrap(err, "Unable to start channels")
 	}
-	for name, product := range s.products {
+	for name, product := range s.Products {
 		if name == "channels" {
 			continue
 		}
 		if err := product.Start(); err != nil {
 			return errors.Wrapf(err, "Unable to start %s", name)
 		}
+	}
+	return nil
+}
+
+func (s *Server) Start() error {
+	// Start products.
+	// This needs to happen before because products are dependent on the HTTP server.
+	if err := s.StartProducts(); err != nil {
+		return err
 	}
 
 	if s.joinCluster && s.platform.Cluster() != nil {

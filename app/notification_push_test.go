@@ -1440,7 +1440,7 @@ func TestPushNotificationRace(t *testing.T) {
 		Return(&model.Preference{Value: "test"}, nil)
 	mockStore.On("Preference").Return(&mockPreferenceStore)
 	s := &Server{
-		products: make(map[string]Product),
+		Products: make(map[string]Product),
 		Router:   mux.NewRouter(),
 	}
 	var err error
@@ -1456,7 +1456,7 @@ func TestPushNotificationRace(t *testing.T) {
 	}
 	ch, err := NewChannels(s, serviceMap)
 	require.NoError(t, err)
-	s.products["channels"] = ch
+	s.Products["channels"] = ch
 
 	app := New(ServerConnector(s.Channels()))
 	require.NotPanics(t, func() {

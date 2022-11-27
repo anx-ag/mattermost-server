@@ -64,12 +64,12 @@ func TestInitializeProducts(t *testing.T) {
 			},
 		}
 		server := &Server{
-			products: make(map[string]Product),
+			Products: make(map[string]Product),
 		}
 
 		err := server.initializeProducts(products, serviceMap)
 		require.NoError(t, err)
-		require.Len(t, server.products, 2)
+		require.Len(t, server.Products, 2)
 	})
 
 	t.Run("2 products and circular dependency", func(t *testing.T) {
@@ -102,7 +102,7 @@ func TestInitializeProducts(t *testing.T) {
 			},
 		}
 		server := &Server{
-			products: make(map[string]Product),
+			Products: make(map[string]Product),
 		}
 
 		err := server.initializeProducts(products, serviceMap)
@@ -130,11 +130,11 @@ func TestInitializeProducts(t *testing.T) {
 			},
 		}
 		server := &Server{
-			products: make(map[string]Product),
+			Products: make(map[string]Product),
 		}
 
 		err := server.initializeProducts(products, serviceMap)
 		require.NoError(t, err)
-		require.Len(t, server.products, 2)
+		require.Len(t, server.Products, 2)
 	})
 }
