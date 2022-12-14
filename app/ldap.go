@@ -4,6 +4,7 @@
 package app
 
 import (
+	"github.com/mattermost/mattermost-server/v6/utils"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -162,6 +163,50 @@ func (a *App) SwitchLdapToEmail(ldapPassword, code, email, newPassword string) (
 	})
 
 	return "/login?extra=signin_change", nil
+}
+
+
+func (a *App) SwitchLdapToOAuth(w http.ResponseWriter, r *http.Request, ldapPassword, email, mfaCode, service string) (string, *model.AppError) {
+	if a.Srv().License() != nil && !*a.Config().ServiceSettings.ExperimentalEnableAuthenticationTransfer {
+		return "", model.NewAppError("SwitchLdapToOAuth", "todo", nil, "", http.StatusForbidden)
+	}
+
+	user, err := a.GetUserByEmail(email)
+	if err != nil {
+		return "", err
+	}
+
+	if user.AuthService != model.UserAuthServiceLdap {
+		return "", model.NewAppError("SwitchLdapToOAuth", "todo", nil, "", http.StatusBadRequest)
+	}
+
+	ldap := a.Ldap()
+	if ldap == nil || user.AuthData == nil {
+		return "", model.NewAppError("SwitchLdapToOAuth", "todo", nil, "", http.StatusNotImplemented)
+	}
+
+	if err = ldap.CheckPasswordAuthData(*user.AuthData, ldapPassword); err != nil {
+		return "", err
+	}
+
+	if err = a.CheckUserMfa(user, mfaCode); err != nil {
+		return "", err
+	}
+
+	stateProps := map[string]string{}
+	stateProps["action"] = model.OAuthActionEmailToSSO
+	stateProps["email"] = email
+
+	if service == model.UserAuthServiceSaml {
+		return a.GetSiteURL() + "/login/sso/saml?action=" + model.OAuthActionEmailToSSO + "&email=" + utils.URLEncode(email), nil
+	}
+
+	authURL, err := a.GetAuthorizationCode(w, r, service, stateProps, "")
+	if err != nil {
+		return "", err
+	}
+
+	return authURL, nil
 }
 
 func (a *App) MigrateIdLDAP(toAttribute string) *model.AppError {

@@ -37,3 +37,12 @@ func (o *SwitchRequest) EmailToLdap() bool {
 func (o *SwitchRequest) LdapToEmail() bool {
 	return o.CurrentService == UserAuthServiceLdap && o.NewService == UserAuthServiceEmail
 }
+
+func (o *SwitchRequest) LdapToOAuth() bool {
+	return o.CurrentService == UserAuthServiceLdap &&
+		(o.NewService == UserAuthServiceSaml ||
+			o.NewService == UserAuthServiceGitlab ||
+			o.NewService == ServiceGoogle ||
+			o.NewService == ServiceOffice365 ||
+			o.NewService == ServiceOpenid)
+}
